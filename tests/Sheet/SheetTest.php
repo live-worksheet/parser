@@ -25,11 +25,15 @@ class SheetTest extends TestCase
         );
 
         self::assertEquals('Category/Subcategory/Sheet', $sheet->getFullName());
+
         self::assertEquals('Sheet', $sheet->getName());
+
         self::assertEquals('Category/Subcategory', $sheet->getPath());
 
         self::assertEquals(['foo' => 'bar'], $sheet->getResources());
 
         self::assertEquals(['A' => 'foobar'], $sheet->getParameters());
+
+        self::assertEquals('Category/Subcategory/Sheet', (string) $sheet);
     }
 }
