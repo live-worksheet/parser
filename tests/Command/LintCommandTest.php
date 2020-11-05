@@ -84,7 +84,7 @@ class LintCommandTest extends TestCase
         $commandTester = new CommandTester($command);
 
         $result = $commandTester->execute(['path' => $path]);
-        $output = $commandTester->getDisplay();
+        $output = preg_replace('/\s+/', ' ', $commandTester->getDisplay(true));
 
         self::assertEquals(Command::FAILURE, $result);
         self::assertMatchesRegularExpression("/Path '\\S+' does not exist\\./", $output);
