@@ -35,6 +35,14 @@ final class Parameter
         $this->precision = $precision ?? 0;
     }
 
+    public function __toString(): string
+    {
+        return sprintf(
+            '%s = %s | %s %d',
+            $this->name, $this->expression, $this->mode, $this->precision
+        );
+    }
+
     public function getName(): string
     {
         return $this->name;

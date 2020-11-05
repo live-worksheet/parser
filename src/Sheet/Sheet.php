@@ -43,6 +43,11 @@ final class Sheet
         $this->parameters = $parameters;
     }
 
+    public function __toString(): string
+    {
+        return $this->getFullName();
+    }
+
     public function getFullName(): string
     {
         return $this->name;
