@@ -130,4 +130,21 @@ class ParameterParserTest extends TestCase
             "/Could not parse definition: '.*'\\./",
         ];
     }
+
+    public function testParseAllIgnoresEmptyLinesAndComments(): void
+    {
+        $parser = new ParameterParser();
+
+        $parameters = $parser->parseAll(
+            " Foo = 1 + 1 | fraction\n".
+            "\n".
+            "# some\n".
+            " ## comments ##\n".
+            "Bar =  FooBar()   | round 5\n"
+        );
+
+        self::assertCount(2, $parameters);
+        self::assertEquals('Foo = 1 + 1 | fraction 0', (string) $parameters['Foo']);
+        self::assertEquals('Bar = FooBar() | round 5', (string) $parameters['Bar']);
+    }
 }
