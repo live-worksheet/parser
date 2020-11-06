@@ -11,7 +11,6 @@ declare(strict_types=1);
 namespace LiveWorksheet\Parser\Sheet;
 
 use LiveWorksheet\Parser\Exception\ParserException;
-use LiveWorksheet\Parser\Parameter\ParameterParser;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
 use Webmozart\PathUtil\Path;
@@ -22,11 +21,9 @@ class SheetParser
     public const PARAMETERS_FILE = 'parameters';
 
     private Filesystem $filesystem;
-    private ParameterParser $parameterParser;
 
-    public function __construct(ParameterParser $parameterParser)
+    public function __construct()
     {
-        $this->parameterParser = $parameterParser;
         $this->filesystem = new Filesystem();
     }
 
@@ -68,15 +65,13 @@ class SheetParser
         $content = $getFileContent(self::MAIN_FILE);
 
         // Extract parameters
-        $parameters = $this->parameterParser->parseAll(
-            $getFileContent(self::PARAMETERS_FILE), $throwParserException
-        );
+        $parameters = $getFileContent(self::PARAMETERS_FILE);
 
         return new Sheet(
             Path::makeRelative($path, $basePath),
             $content,
-            $fileMap,
-            $parameters
+            $parameters,
+            $fileMap
         );
     }
 

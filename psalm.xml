@@ -9,6 +9,7 @@
     <projectFiles>
         <directory name="src"/>
         <directory name="tests"/>
+        <file name="bin/material-parser.php"/>
         <ignoreFiles>
             <directory name="vendor"/>
             <directory name="tests/Fixtures"/>

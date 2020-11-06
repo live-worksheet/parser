@@ -10,20 +10,13 @@ declare(strict_types=1);
 
 namespace LiveWorksheet\Parser\Sheet;
 
-use LiveWorksheet\Parser\Parameter\Parameter;
 use Webmozart\PathUtil\Path;
 
 final class Sheet
 {
     private string $name;
     private string $content;
-
-    /**
-     * Parameter mapping: unique name => value.
-     *
-     * @var array<string, Parameter>
-     */
-    private array $parameters;
+    private string $parameters;
 
     /**
      * File path mapping: path relative to sheet root => absolute path.
@@ -35,12 +28,12 @@ final class Sheet
     /**
      * @internal
      */
-    public function __construct(string $name, string $content, array $resources, array $parameters)
+    public function __construct(string $name, string $content, string $parameters = '', array $resources = [])
     {
         $this->name = $name;
         $this->content = $content;
-        $this->resources = $resources;
         $this->parameters = $parameters;
+        $this->resources = $resources;
     }
 
     public function __toString(): string
@@ -68,19 +61,16 @@ final class Sheet
         return $this->content;
     }
 
+    public function getParameters(): string
+    {
+        return $this->parameters;
+    }
+
     /**
      * @return array<string, string>
      */
     public function getResources(): array
     {
         return $this->resources;
-    }
-
-    /**
-     * @return array<string, Parameter>
-     */
-    public function getParameters(): array
-    {
-        return $this->parameters;
     }
 }

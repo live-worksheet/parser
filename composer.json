@@ -51,7 +51,6 @@
             "vendor/bin/psalm"
         ],
         "build": [
-            "@setup",
             "@cs",
             "@tests",
             "@psalm",

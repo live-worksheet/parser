@@ -11,10 +11,7 @@ declare(strict_types=1);
 namespace LiveWorksheet\Parser\Tests\Sheet;
 
 use LiveWorksheet\Parser\Exception\ParserException;
-use LiveWorksheet\Parser\Parameter\Parameter;
-use LiveWorksheet\Parser\Parameter\ParameterParser;
 use LiveWorksheet\Parser\Sheet\SheetParser;
-use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Webmozart\PathUtil\Path;
 
@@ -28,18 +25,7 @@ class SheetParserTest extends TestCase
      */
     public function testParse(bool $throw): void
     {
-        $parameter = new Parameter('A', 'foobar');
-
-        /** @var ParameterParser&MockObject $parameterParser */
-        $parameterParser = $this->createMock(ParameterParser::class);
-        $parameterParser
-            ->expects(self::once())
-            ->method('parseAll')
-            ->with("A = foobar\n", $throw)
-            ->willReturn(['A' => $parameter])
-        ;
-
-        $parser = $this->getParser($parameterParser);
+        $parser = new SheetParser();
 
         $sheet = $parser->parse(
             Path::join(self::SHEETS_FIXTURE_DIR, 'CategoryA/Demo1'),
@@ -58,12 +44,12 @@ class SheetParserTest extends TestCase
         self::assertEquals('CategoryA/Demo1', $sheet->getFullName());
         self::assertEquals("Hello World\n", $sheet->getContent());
         self::assertEquals($expectedFileMap, $sheet->getResources());
-        self::assertEquals(['A' => $parameter], $sheet->getParameters());
+        self::assertEquals("A = foobar\n", $sheet->getParameters());
     }
 
     public function testParseReturnsNullIfMainFileIsMissing(): void
     {
-        $parser = $this->getParser();
+        $parser = new SheetParser();
 
         $sheet = $parser->parse(
             Path::join(self::SHEETS_FIXTURE_DIR, 'Demo4'),
@@ -75,7 +61,7 @@ class SheetParserTest extends TestCase
 
     public function testParseThrowsIfMainFileIsMissing(): void
     {
-        $parser = $this->getParser();
+        $parser = new SheetParser();
 
         $this->expectException(ParserException::class);
         $this->expectExceptionMessageMatches("/^Main file not found in '\\S+'.$/");
@@ -89,7 +75,7 @@ class SheetParserTest extends TestCase
 
     public function testParseThrowsIfBasePathIsInvalid(): void
     {
-        $parser = $this->getParser();
+        $parser = new SheetParser();
 
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessageMatches("/^Path '\\S+' is not a valid base path of '\\S+'\\.$/");
@@ -103,26 +89,20 @@ class SheetParserTest extends TestCase
 
     public function testParseWithoutParameterFile(): void
     {
-        /** @var ParameterParser&MockObject $parameterParser */
-        $parameterParser = $this->createMock(ParameterParser::class);
-        $parameterParser
-            ->expects(self::once())
-            ->method('parseAll')
-            ->with('')
-            ->willReturn([])
-        ;
+        $parser = new SheetParser();
 
-        $parser = $this->getParser($parameterParser);
-
-        $parser->parse(
+        $sheet = $parser->parse(
             Path::join(self::SHEETS_FIXTURE_DIR, 'CategoryA/Demo2'),
             self::SHEETS_FIXTURE_DIR,
         );
+
+        self::assertNotNull($sheet);
+        self::assertEquals('', $sheet->getParameters());
     }
 
     public function testParseAll(): void
     {
-        $parser = $this->getParser();
+        $parser = new SheetParser();
 
         $sheets = $parser->parseAll(
             self::SHEETS_FIXTURE_DIR,
@@ -147,7 +127,7 @@ class SheetParserTest extends TestCase
 
     public function testParseAllWithBasePathOutsideOfSearchPath(): void
     {
-        $parser = $this->getParser();
+        $parser = new SheetParser();
 
         $sheets = $parser->parseAll(
             Path::join(self::SHEETS_FIXTURE_DIR, 'CategoryA'),
@@ -167,32 +147,5 @@ class SheetParserTest extends TestCase
                 $sheets[Path::join(self::SHEETS_FIXTURE_DIR, $expectedSheet)]->getFullName()
             );
         }
-    }
-
-    public function testParseAllPassesOnThrowOption(): void
-    {
-        /** @var ParameterParser&MockObject $parameterParser */
-        $parameterParser = $this->createMock(ParameterParser::class);
-        $parameterParser
-            ->expects(self::atLeastOnce())
-            ->method('parseAll')
-            ->with(self::anything(), true)
-            ->willReturn(['A' => 'foobar'])
-        ;
-
-        $parser = $this->getParser($parameterParser);
-
-        $parser->parseAll(
-            self::SHEETS_FIXTURE_DIR,
-            self::SHEETS_FIXTURE_DIR,
-            true
-        );
-    }
-
-    private function getParser(ParameterParser $parameterParser = null): SheetParser
-    {
-        return new SheetParser(
-            $parameterParser ?? new ParameterParser()
-        );
     }
 }
