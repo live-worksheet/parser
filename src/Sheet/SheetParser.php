@@ -31,10 +31,16 @@ class SheetParser
      * Parses a sheet directory and returns a Sheet or null if it could not be
      * parsed. If $throw is set to true an exception is thrown instead.
      */
-    public function parse(string $path, string $basePath, bool $throwParserException = false): ?Sheet
+    public function parse(string $path, string $basePath = null, bool $throwParserException = false): ?Sheet
     {
-        if (!Path::isBasePath($basePath, $path)) {
-            throw new \InvalidArgumentException("Path '$basePath' is not a valid base path of '$path'.");
+        if (null !== $basePath) {
+            if (!Path::isBasePath($basePath, $path)) {
+                throw new \InvalidArgumentException("Path '$basePath' is not a valid base path of '$path'.");
+            }
+
+            $name = Path::makeRelative($path, $basePath) ?: Path::getFilename($path);
+        } else {
+            $name = Path::getFilename($path);
         }
 
         if (!$this->containsMainFile($path)) {
@@ -68,7 +74,7 @@ class SheetParser
         $parameters = $getFileContent(self::PARAMETERS_FILE);
 
         return new Sheet(
-            Path::makeRelative($path, $basePath),
+            $name,
             $content,
             $parameters,
             $fileMap
@@ -83,7 +89,7 @@ class SheetParser
      *
      * @return array<string, Sheet>
      */
-    public function parseAll(string $searchPath, string $basePath, bool $throwParserException = false): array
+    public function parseAll(string $searchPath, string $basePath = null, bool $throwParserException = false): array
     {
         $directories = (new Finder())
             ->in($searchPath)
@@ -95,9 +101,13 @@ class SheetParser
 
         $sheetMap = [];
 
+        if (null === $basePath) {
+            $basePath = $searchPath;
+        }
+
         foreach ($directories as $directory) {
-            $searchPath = Path::canonicalize($directory->getPathname());
-            $sheetMap[$searchPath] = $this->parse($searchPath, $basePath, $throwParserException);
+            $directoryPath = Path::canonicalize($directory->getPathname());
+            $sheetMap[$directoryPath] = $this->parse($directoryPath, $basePath, $throwParserException);
         }
 
         return array_filter($sheetMap);

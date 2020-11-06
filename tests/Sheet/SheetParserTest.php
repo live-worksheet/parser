@@ -20,18 +20,13 @@ class SheetParserTest extends TestCase
     private const SHEETS_FIXTURE_DIR = __DIR__.'/../Fixtures/sheets';
 
     /**
-     * @testWith [false]
-     *           [true]
+     * @dataProvider provideDemo1Paths
      */
-    public function testParse(bool $throw): void
+    public function testParse(string $path, ?string $basePath, string $expectedName): void
     {
         $parser = new SheetParser();
 
-        $sheet = $parser->parse(
-            Path::join(self::SHEETS_FIXTURE_DIR, 'CategoryA/Demo1'),
-            self::SHEETS_FIXTURE_DIR,
-            $throw
-        );
+        $sheet = $parser->parse($path, $basePath);
 
         $expectedFileMap = [
             'index.md' => Path::join(self::SHEETS_FIXTURE_DIR, 'CategoryA/Demo1/index.md'),
@@ -41,10 +36,34 @@ class SheetParserTest extends TestCase
         ];
 
         self::assertNotNull($sheet);
-        self::assertEquals('CategoryA/Demo1', $sheet->getFullName());
+        self::assertEquals($expectedName, $sheet->getFullName());
         self::assertEquals("Hello World\n", $sheet->getContent());
         self::assertEquals($expectedFileMap, $sheet->getResources());
         self::assertEquals("A = foobar\n", $sheet->getParameters());
+    }
+
+    public function provideDemo1Paths(): \Generator
+    {
+        $fixtureDir = Path::canonicalize(self::SHEETS_FIXTURE_DIR);
+        $fullPath = Path::join(self::SHEETS_FIXTURE_DIR, 'CategoryA/Demo1');
+
+        yield 'full name' => [
+            $fullPath,
+            $fixtureDir,
+            'CategoryA/Demo1',
+        ];
+
+        yield 'identical path and base path' => [
+            $fullPath,
+            $fullPath,
+            'Demo1',
+        ];
+
+        yield 'omitted base path' => [
+            $fullPath,
+            null,
+            'Demo1',
+        ];
     }
 
     public function testParseReturnsNullIfMainFileIsMissing(): void
@@ -100,20 +119,14 @@ class SheetParserTest extends TestCase
         self::assertEquals('', $sheet->getParameters());
     }
 
-    public function testParseAll(): void
+    /**
+     * @dataProvider provideSheetRootPaths
+     */
+    public function testParseAll(string $path, ?string $basePath, array $expectedSheets): void
     {
         $parser = new SheetParser();
 
-        $sheets = $parser->parseAll(
-            self::SHEETS_FIXTURE_DIR,
-            self::SHEETS_FIXTURE_DIR
-        );
-
-        $expectedSheets = [
-            'CategoryA/Demo1',
-            'CategoryA/Demo2',
-            'CategoryB/SubCategory/Demo3',
-        ];
+        $sheets = $parser->parseAll($path, $basePath);
 
         self::assertCount(\count($expectedSheets), $sheets);
 
@@ -123,6 +136,50 @@ class SheetParserTest extends TestCase
                 $sheets[Path::join(self::SHEETS_FIXTURE_DIR, $expectedSheet)]->getFullName()
             );
         }
+    }
+
+    public function provideSheetRootPaths(): \Generator
+    {
+        $fixtureDir = Path::canonicalize(self::SHEETS_FIXTURE_DIR);
+
+        $allSheets = [
+            'CategoryA/Demo1',
+            'CategoryA/Demo2',
+            'CategoryB/SubCategory/Demo3',
+        ];
+
+        yield 'all (identical base dir)' => [
+            $fixtureDir,
+            $fixtureDir,
+            $allSheets,
+        ];
+
+        yield 'all (omitting base dir)' => [
+            $fixtureDir,
+            null,
+            $allSheets,
+        ];
+
+        yield 'only category b' => [
+            Path::join(self::SHEETS_FIXTURE_DIR, 'CategoryB'),
+            $fixtureDir,
+            [
+                'CategoryB/SubCategory/Demo3',
+            ],
+        ];
+    }
+
+    public function testParseWithBasePathOutsideOfSearchPath(): void
+    {
+        $parser = new SheetParser();
+
+        $sheet = $parser->parse(
+            Path::join(self::SHEETS_FIXTURE_DIR, 'CategoryB/SubCategory/Demo3'),
+            Path::join(self::SHEETS_FIXTURE_DIR, 'CategoryB'),
+        );
+
+        self::assertNotNull($sheet);
+        self::assertEquals('SubCategory/Demo3', $sheet->getFullName());
     }
 
     public function testParseAllWithBasePathOutsideOfSearchPath(): void
