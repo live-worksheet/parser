@@ -17,9 +17,9 @@ set_time_limit(0);
 
 require __DIR__.'/../vendor/autoload.php';
 
-// todo: Consider using Sf DI
-$parser = new SheetParser(new ParameterParser());
+$sheetParser = new SheetParser();
+$parameterParser = new ParameterParser();
 
 $app = new Application();
-$app->add(new LintCommand($parser));
+$app->add(new LintCommand($sheetParser, $parameterParser));
 $app->run();

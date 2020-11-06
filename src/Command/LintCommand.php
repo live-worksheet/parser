@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace LiveWorksheet\Parser\Command;
 
 use LiveWorksheet\Parser\Exception\ParserException;
+use LiveWorksheet\Parser\Parameter\ParameterParser;
 use LiveWorksheet\Parser\Sheet\SheetParser;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -24,12 +25,14 @@ final class LintCommand extends Command
 {
     protected static $defaultName = 'lint';
 
-    private SheetParser $parser;
+    private SheetParser $sheetParser;
+    private ParameterParser $parameterParser;
     private Filesystem $filesystem;
 
-    public function __construct(SheetParser $parser)
+    public function __construct(SheetParser $sheetParser, ParameterParser $parameterParser)
     {
-        $this->parser = $parser;
+        $this->sheetParser = $sheetParser;
+        $this->parameterParser = $parameterParser;
         $this->filesystem = new Filesystem();
 
         parent::__construct();
@@ -47,6 +50,7 @@ final class LintCommand extends Command
     {
         $style = new SymfonyStyle($input, $output);
 
+        /** @var string $searchPath */
         $searchPath = $input->getArgument('path');
 
         if (!Path::isAbsolute($searchPath)) {
@@ -59,12 +63,35 @@ final class LintCommand extends Command
             return Command::FAILURE;
         }
 
+        // Parse sheets
         try {
-            $sheets = $this->parser->parseAll($searchPath, $searchPath, true);
+            $sheets = $this->sheetParser->parseAll($searchPath, $searchPath, true);
         } catch (ParserException $exception) {
-            $style->error(sprintf('Error parsing: %s', $exception->getMessage()));
+            $style->error(
+                sprintf(
+                    'Error parsing sheets: %s',
+                    $exception->getMessage()
+                )
+            );
 
             return Command::FAILURE;
+        }
+
+        // Parse parameters
+        foreach ($sheets as $sheet) {
+            try {
+                $this->parameterParser->parseAll($sheet->getParameters());
+            } catch (ParserException $exception) {
+                $style->error(
+                    sprintf(
+                        "Error parsing parameters of sheet '%s': %s",
+                        $sheet->getFullName(),
+                        $exception->getMessage()
+                    )
+                );
+
+                return Command::FAILURE;
+            }
         }
 
         $style->writeln(sprintf('A total of %d sheets have been found.', \count($sheets)));

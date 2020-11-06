@@ -20,8 +20,8 @@ class SheetTest extends TestCase
         $sheet = new Sheet(
             'Category/Subcategory/Sheet',
             'content',
-            ['foo' => 'bar'],
-            ['A' => 'foobar'],
+            "A = foo\nB = bar\n",
+            ['foo' => 'bar']
         );
 
         self::assertEquals('Category/Subcategory/Sheet', $sheet->getFullName());
@@ -32,7 +32,7 @@ class SheetTest extends TestCase
 
         self::assertEquals(['foo' => 'bar'], $sheet->getResources());
 
-        self::assertEquals(['A' => 'foobar'], $sheet->getParameters());
+        self::assertEquals("A = foo\nB = bar\n", $sheet->getParameters());
 
         self::assertEquals('Category/Subcategory/Sheet', (string) $sheet);
     }
