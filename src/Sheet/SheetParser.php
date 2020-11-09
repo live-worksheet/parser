@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace LiveWorksheet\Parser\Sheet;
 
 use LiveWorksheet\Parser\Exception\ParserException;
+use SplFileInfo;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
 use Webmozart\PathUtil\Path;
@@ -98,6 +99,13 @@ class SheetParser
                 fn (\SplFileInfo $f) => $this->containsMainFile($f->getPathname())
             )
         ;
+
+        // Allow pointing search path to sheet root
+        if (!$directories->hasResults() && $this->containsMainFile($searchPath)) {
+            $directories = [
+                new SplFileInfo($searchPath),
+            ];
+        }
 
         $sheetMap = [];
 

@@ -17,7 +17,7 @@ use Webmozart\PathUtil\Path;
 
 class SheetParserTest extends TestCase
 {
-    private const SHEETS_FIXTURE_DIR = __DIR__.'/../Fixtures/sheets';
+    private const SHEETS_FIXTURE_DIR = __DIR__.'/../Fixtures/files/sheets';
 
     /**
      * @dataProvider provideDemo1Paths
@@ -111,7 +111,7 @@ class SheetParserTest extends TestCase
         $parser = new SheetParser();
 
         $sheet = $parser->parse(
-            Path::join(self::SHEETS_FIXTURE_DIR, 'CategoryA/Demo2'),
+            Path::join(self::SHEETS_FIXTURE_DIR, 'CategoryB/SubCategory/Demo3'),
             self::SHEETS_FIXTURE_DIR,
         );
 
@@ -146,6 +146,7 @@ class SheetParserTest extends TestCase
             'CategoryA/Demo1',
             'CategoryA/Demo2',
             'CategoryB/SubCategory/Demo3',
+            'Demo5',
         ];
 
         yield 'all (identical base dir)' => [
@@ -204,5 +205,20 @@ class SheetParserTest extends TestCase
                 $sheets[Path::join(self::SHEETS_FIXTURE_DIR, $expectedSheet)]->getFullName()
             );
         }
+    }
+
+    public function testParseSingle(): void
+    {
+        $parser = new SheetParser();
+
+        $sheetDir = Path::join(self::SHEETS_FIXTURE_DIR, 'CategoryA/Demo1');
+        $sheets = $parser->parseAll($sheetDir);
+
+        self::assertCount(1, $sheets);
+
+        self::assertEquals(
+            'Demo1',
+            $sheets[$sheetDir]->getFullName()
+        );
     }
 }
