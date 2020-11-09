@@ -20,6 +20,7 @@
         "phpunit/phpunit": "^9.4",
         "psalm/plugin-phpunit": "^0.13.0",
         "psalm/plugin-symfony": "^2.0",
+        "symfony/process": "^5.1",
         "symplify/easy-coding-standard": "^8.3",
         "vimeo/psalm": "^4.1"
     },
@@ -46,7 +47,10 @@
             "vendor/bin/ecs check src tests bin --fix --ansi"
         ],
         "tests": [
-            "vendor/bin/phpunit"
+            "vendor/bin/phpunit --testsuite=default"
+        ],
+        "functional": [
+            "vendor/bin/phpunit --testsuite=functional"
         ],
         "psalm": [
             "vendor/bin/psalm"
@@ -54,6 +58,7 @@
         "build": [
             "@cs",
             "@tests",
+            "@functional",
             "@psalm",
             "tools/box compile"
         ]
