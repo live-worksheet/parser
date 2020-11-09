@@ -10,6 +10,7 @@
     ],
     "require": {
         "php": ">=7.4",
+        "league/commonmark": "^1.5",
         "symfony/console": "^5.1",
         "symfony/filesystem": "^5.1",
         "symfony/finder": "^5.1",

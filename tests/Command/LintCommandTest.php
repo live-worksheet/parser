@@ -12,8 +12,8 @@ namespace LiveWorksheet\Parser\Tests\Command;
 
 use LiveWorksheet\Parser\Command\LintCommand;
 use LiveWorksheet\Parser\Exception\ParserException;
+use LiveWorksheet\Parser\Markdown\Converter;
 use LiveWorksheet\Parser\Parameter\ParameterParser;
-use LiveWorksheet\Parser\Sheet\Sheet;
 use LiveWorksheet\Parser\Sheet\SheetParser;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -31,47 +31,37 @@ class LintCommandTest extends TestCase
     }
 
     /**
-     * @dataProvider provideValidPaths
+     * @dataProvider provideLintSamples
      */
-    public function testLint(string $path, string $searchPath): void
+    public function testLint(string $path, string $expectedOutput): void
     {
-        $sheets = [
-            'path/to/sheet/A' => new Sheet('A', 'foo'),
-            'path/to/sheet/B' => new Sheet('B', 'bar'),
-        ];
+        $lintCommand = $this->getLintCommand();
 
-        /** @var SheetParser&MockObject $sheetParser */
-        $sheetParser = $this->createMock(SheetParser::class);
-        $sheetParser
-            ->expects(self::once())
-            ->method('parseAll')
-            ->with($searchPath, $searchPath, true)
-            ->willReturn($sheets)
-        ;
+        // Make sure the terminal width matches the test data
+        putenv('COLUMNS=80');
 
-        $command = $this->getLintCommand($sheetParser);
+        $commandTester = new CommandTester($lintCommand);
+        $commandTester->execute(['path' => $path]);
 
-        $commandTester = new CommandTester($command);
+        $output = $commandTester->getDisplay(true);
 
-        $result = $commandTester->execute(['path' => $path]);
-        $output = $commandTester->getDisplay();
-
-        self::assertEquals(Command::SUCCESS, $result);
-        self::assertStringContainsString('A total of 2 sheets have been found.', $output);
+        self::assertEquals($expectedOutput, $output);
     }
 
-    public function provideValidPaths(): \Generator
+    public function provideLintSamples(): \Generator
     {
-        $sheetFixtureDir = Path::canonicalize(__DIR__.'/../Fixtures/sheets');
+        $getFile = static fn (string $name): string => file_get_contents(
+            Path::join(__DIR__.'/../Fixtures/files/console-output', "$name.out")
+        );
 
-        yield 'absolute' => [
-            $sheetFixtureDir,
-            $sheetFixtureDir,
+        yield 'valid' => [
+            Path::canonicalize(__DIR__.'/../Fixtures/files/sheets/CategoryA/Demo1'),
+            $getFile('lint-valid'),
         ];
 
-        yield 'relative' => [
-            'tests/Fixtures/sheets',
-            $sheetFixtureDir,
+        yield 'with errors' => [
+            Path::canonicalize(__DIR__.'/../Fixtures/files/sheets'),
+            $getFile('lint-errors'),
         ];
     }
 
@@ -130,54 +120,15 @@ class LintCommandTest extends TestCase
         self::assertStringContainsString('Error parsing sheets: <message>', $output);
     }
 
-    public function testReportsFailuresWhenParsingParameters(): void
-    {
-        $sheets = [
-            'path/to/sheet/A' => new Sheet('A', '', "foo = bar || invalid\n"),
-            'path/to/sheet/B' => new Sheet('B', ''),
-        ];
-
-        /** @var SheetParser&MockObject $sheetParser */
-        $sheetParser = $this->createMock(SheetParser::class);
-        $sheetParser
-            ->method('parseAll')
-            ->willReturn($sheets)
-        ;
-
-        /** @var ParameterParser&MockObject $parameterParser */
-        $parameterParser = $this->createMock(ParameterParser::class);
-        $parameterParser
-            ->method('parseAll')
-            ->willThrowException(new ParserException('<message>'))
-        ;
-
-        $command = $this->getLintCommand($sheetParser, $parameterParser);
-
-        $commandTester = new CommandTester($command);
-
-        $result = $commandTester->execute([]);
-        $output = $commandTester->getDisplay();
-
-        self::assertEquals(Command::FAILURE, $result);
-        self::assertStringContainsString("Error parsing parameters of sheet 'A': <message>", $output);
-    }
-
     /**
-     * @param SheetParser&MockObject|null     $sheetParser
-     * @param ParameterParser&MockObject|null $parameterParser
+     * @param SheetParser&MockObject|null $sheetParser
      */
-    private function getLintCommand($sheetParser = null, $parameterParser = null): LintCommand
+    private function getLintCommand($sheetParser = null): LintCommand
     {
-        if (null === $sheetParser) {
-            /** @var SheetParser&MockObject $sheetParser */
-            $sheetParser = $this->createMock(SheetParser::class);
-        }
-
-        if (null === $parameterParser) {
-            /** @var ParameterParser&MockObject $parameterParser */
-            $parameterParser = $this->createMock(ParameterParser::class);
-        }
-
-        return new LintCommand($sheetParser, $parameterParser);
+        return new LintCommand(
+            $sheetParser ?? new SheetParser(),
+            new ParameterParser(),
+            new Converter()
+        );
     }
 }

@@ -1,0 +1,23 @@
+<h2>simple</h2>
+<p>Variables Foo or FooBar.</p>
+<h2>input</h2>
+<p>Inputs ?Foo, ?Bar.</p>
+<h2>more characters</h2>
+<p>Variables Foo, Bar</p>
+<h2>other contexts</h2>
+<p>Indented code:</p>
+<pre><code>{{A}}, {{B?}}
+</code></pre>
+<p>Or inline <code>{{Foo}}</code> or fenced:</p>
+<pre><code>{{Foo}}
+</code></pre>
+<ul>
+<li>Foo</li>
+<li>?Bar</li>
+</ul>
+<p>Or inside <strong>inline Foo blocks</strong>.</p>
+<h2>no variables</h2>
+<p>No spaces between braces { {Foo}} {{Foo} } as well as after braces {{ Foo }}.</p>
+<p>Bad formats: ?Foo, ?Foo, !unknown variable 'F oo'!</p>
+<p>Variables are case-sensitive: !unknown variable 'foo'!.</p>
+<p>These are invalid: !unknown variable 'FooBar'!, !unknown variable 'FooBar'!</p>

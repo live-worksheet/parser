@@ -11,7 +11,10 @@ declare(strict_types=1);
 namespace LiveWorksheet\Parser\Command;
 
 use LiveWorksheet\Parser\Exception\ParserException;
+use LiveWorksheet\Parser\Markdown\Converter;
+use LiveWorksheet\Parser\Markdown\CountingInputContext;
 use LiveWorksheet\Parser\Parameter\ParameterParser;
+use LiveWorksheet\Parser\Sheet\Sheet;
 use LiveWorksheet\Parser\Sheet\SheetParser;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -27,12 +30,14 @@ final class LintCommand extends Command
 
     private SheetParser $sheetParser;
     private ParameterParser $parameterParser;
+    private Converter $markdownConverter;
     private Filesystem $filesystem;
 
-    public function __construct(SheetParser $sheetParser, ParameterParser $parameterParser)
+    public function __construct(SheetParser $sheetParser, ParameterParser $parameterParser, Converter $markdownConverter)
     {
         $this->sheetParser = $sheetParser;
         $this->parameterParser = $parameterParser;
+        $this->markdownConverter = $markdownConverter;
         $this->filesystem = new Filesystem();
 
         parent::__construct();
@@ -48,7 +53,7 @@ final class LintCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $style = new SymfonyStyle($input, $output);
+        $io = new SymfonyStyle($input, $output);
 
         /** @var string $searchPath */
         $searchPath = $input->getArgument('path');
@@ -58,16 +63,18 @@ final class LintCommand extends Command
         }
 
         if (!$this->filesystem->exists($searchPath) || !is_dir($searchPath)) {
-            $style->error("Path '$searchPath' does not exist.");
+            $io->error("Path '$searchPath' does not exist.");
 
             return Command::FAILURE;
         }
 
         // Parse sheets
+        $io->text('Reading sheets…');
+
         try {
-            $sheets = $this->sheetParser->parseAll($searchPath, $searchPath, true);
+            $sheets = $this->sheetParser->parseAll($searchPath, null, true);
         } catch (ParserException $exception) {
-            $style->error(
+            $io->error(
                 sprintf(
                     'Error parsing sheets: %s',
                     $exception->getMessage()
@@ -77,27 +84,104 @@ final class LintCommand extends Command
             return Command::FAILURE;
         }
 
-        // Parse parameters
-        foreach ($sheets as $sheet) {
-            try {
-                $this->parameterParser->parseAll($sheet->getParameters());
-            } catch (ParserException $exception) {
-                $style->error(
-                    sprintf(
-                        "Error parsing parameters of sheet '%s': %s",
-                        $sheet->getFullName(),
-                        $exception->getMessage()
-                    )
-                );
+        $io->text(
+            sprintf(
+                "A total of %d sheets have been found.\n",
+                \count($sheets)
+            )
+        );
 
-                return Command::FAILURE;
+        // Validate sheets
+        $io->text('Validating sheets…');
+
+        $invalidSheets = [];
+
+        $progressBar = $io->createProgressBar(\count($sheets));
+        $progressBar->start();
+
+        foreach ($sheets as $sheet) {
+            $progressBar->advance();
+
+            $err1 = $this->parseParameters($sheet, $parameters);
+            $err2 = $this->validateMarkdown($sheet, $parameters);
+
+            if (!empty($errors = [...$err1, ...$err2])) {
+                $invalidSheets[$sheet->getFullName()] = $errors;
             }
         }
 
-        $style->writeln(sprintf('A total of %d sheets have been found.', \count($sheets)));
+        $progressBar->finish();
+        $io->writeln("\n");
 
-        $style->success('Everything is looking fine.');
+        if (empty($invalidSheets)) {
+            $io->success('Everything is looking fine.');
 
-        return Command::SUCCESS;
+            return Command::SUCCESS;
+        }
+
+        foreach ($invalidSheets as $sheet => $errors) {
+            $io->error(
+                sprintf("Sheet '%s' contains %d error(s):\n%s",
+                    $sheet,
+                    \count($errors),
+                    implode("\n", $errors)
+                )
+            );
+        }
+
+        return Command::FAILURE;
+    }
+
+    private function parseParameters(Sheet $sheet, array &$parameters = null): array
+    {
+        try {
+            $parameters = $this->parameterParser->parseAll($sheet->getParameters(), true);
+        } catch (ParserException $exception) {
+            return [
+                sprintf(
+                    " - Invalid parameter(s):\n    %s",
+                    $exception->getMessage()
+                ),
+            ];
+        }
+
+        return [];
+    }
+
+    private function validateMarkdown(Sheet $sheet, ?array $parameters): array
+    {
+        $context = new CountingInputContext();
+
+        $context->setContent($sheet->getContent());
+        $context->setResources($sheet->getResources());
+        $context->setParameters($parameters ?? []);
+
+        $this->markdownConverter->markdownToHtml($context);
+
+        // Check stats for errors
+        $stats = $context->getStats();
+
+        $check = [
+            'variable' => $stats->getVariablesCounts(false),
+            'variable placeholder' => $stats->getVariablePlaceholderCounts(false),
+            'resource' => $stats->getResourcesCounts(false),
+        ];
+
+        $errorOutputs = [];
+
+        foreach ($check as $label => $errors) {
+            if (empty($errors)) {
+                continue;
+            }
+
+            foreach ($errors as $value => $count) {
+                $errorOutputs[] = sprintf(
+                    " - Invalid md: The %s '%s' does not exist (seen %dx).",
+                    $label, $value, $count
+                );
+            }
+        }
+
+        return $errorOutputs;
     }
 }

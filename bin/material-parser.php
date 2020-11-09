@@ -9,6 +9,7 @@ declare(strict_types=1);
  */
 
 use LiveWorksheet\Parser\Command\LintCommand;
+use LiveWorksheet\Parser\Markdown\Converter;
 use LiveWorksheet\Parser\Parameter\ParameterParser;
 use LiveWorksheet\Parser\Sheet\SheetParser;
 use Symfony\Component\Console\Application;
@@ -19,7 +20,8 @@ require __DIR__.'/../vendor/autoload.php';
 
 $sheetParser = new SheetParser();
 $parameterParser = new ParameterParser();
+$markdownConverter = new Converter();
 
 $app = new Application();
-$app->add(new LintCommand($sheetParser, $parameterParser));
+$app->add(new LintCommand($sheetParser, $parameterParser, $markdownConverter));
 $app->run();
