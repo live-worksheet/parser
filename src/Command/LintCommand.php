@@ -139,7 +139,7 @@ final class LintCommand extends Command
         } catch (ParserException $exception) {
             return [
                 sprintf(
-                    ' - Invalid parameter(s): %s',
+                    " - Invalid parameter(s):\n    %s",
                     $exception->getMessage()
                 ),
             ];
@@ -176,7 +176,7 @@ final class LintCommand extends Command
 
             foreach ($errors as $value => $count) {
                 $errorOutputs[] = sprintf(
-                    " - Invalid markdown: The %s '%s' does not exist (seen %dx).",
+                    " - Invalid md: The %s '%s' does not exist (seen %dx).",
                     $label, $value, $count
                 );
             }

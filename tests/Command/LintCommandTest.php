@@ -37,6 +37,9 @@ class LintCommandTest extends TestCase
     {
         $lintCommand = $this->getLintCommand();
 
+        // Make sure the terminal width matches the test data
+        putenv('COLUMNS=80');
+
         $commandTester = new CommandTester($lintCommand);
         $commandTester->execute(['path' => $path]);
 
