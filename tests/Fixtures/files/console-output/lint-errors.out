@@ -1,0 +1,18 @@
+
+ Reading sheets…
+ A total of 4 sheets have been found.
+
+ Validating sheets…
+ 0/4 [░░░░░░░░░░░░░░░░░░░░░░░░░░░░]   0%
+ 4/4 [▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓] 100%
+
+ [ERROR] Sheet 'CategoryA/Demo2' contains 2 error(s):                                                                   
+          - Invalid markdown: The variable 'A' does not exist (seen 2x).                                                
+          - Invalid markdown: The variable placeholder 'A' does not exist (seen 1x).                                    
+
+ [ERROR] Sheet 'Demo5' contains 1 error(s):                                                                             
+          - Invalid parameter(s): Could not parse definition: 'B = invalid | a b c'.                                    
+
+ [ERROR] Sheet 'CategoryB/SubCategory/Demo3' contains 1 error(s):                                                       
+          - Invalid markdown: The resource 'missing.svg' does not exist (seen 1x).                                      
+
