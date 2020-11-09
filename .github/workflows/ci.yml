@@ -10,7 +10,7 @@ on:
 
 jobs:
   analyze:
-    name: CS + Static Analyis
+    name: CS + static analyis
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
@@ -35,7 +35,7 @@ jobs:
         run: vendor/bin/psalm --no-suggestions --no-progress
 
   test:
-    name: Unit Tests + Coverage
+    name: Unit tests + coverage
     runs-on: ubuntu-latest
     steps:
       - name: Setup PHP
@@ -53,7 +53,7 @@ jobs:
         run: composer install --no-interaction --no-suggest
 
       - name: Run the unit tests
-        run: vendor/bin/phpunit --colors=always
+        run: vendor/bin/phpunit --testsuite=default --colors=always
 
       - name: Generate the coverage report
         run: php -d pcov.enabled=1 vendor/bin/phpunit --coverage-clover=clover.xml --colors=always
@@ -62,3 +62,25 @@ jobs:
         uses: codecov/codecov-action@v1
         with:
           file: ./clover.xml
+
+  integration:
+    name: Test against material repository
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 7.4
+          extensions: fileinfo, hash, intl, json, mbstring, pcre, zlib
+          tools: prestissimo
+          coverage: none
+
+      - name: Checkout
+        uses: actions/checkout@v1
+
+      - name: Install the dependencies
+        run: composer install --no-interaction --no-suggest
+
+      - name: Run the unit tests
+        run: vendor/bin/phpunit --testsuite=functional --colors=always
