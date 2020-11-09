@@ -1,0 +1,4 @@
+A = 2
+
+# The following parameter is invalid
+B = invalid | a b c
