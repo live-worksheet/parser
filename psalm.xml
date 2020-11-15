@@ -20,6 +20,12 @@
         <pluginClass class="Psalm\PhpUnitPlugin\Plugin"/>
     </plugins>
     <issueHandlers>
+        <!-- Ignore PossiblyUndefinedMethod with NodeDefinition::* in configurations. -->
+        <PossiblyUndefinedMethod>
+            <errorLevel type="suppress">
+                <directory name="src/Parameter/Configuration"/>
+            </errorLevel>
+        </PossiblyUndefinedMethod>
         <!-- Allow variadic call variant that has no type hint. -->
         <TooManyArguments>
             <errorLevel type="suppress">

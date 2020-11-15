@@ -61,7 +61,7 @@ final class Sheet
         return $this->content;
     }
 
-    public function getParameters(): string
+    public function getParameterData(): string
     {
         return $this->parameters;
     }

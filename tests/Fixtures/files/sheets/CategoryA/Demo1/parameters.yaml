@@ -1,0 +1,4 @@
+_functions:
+  - X = 4 + Y
+
+Y: 100

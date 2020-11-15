@@ -1,0 +1,7 @@
+_functions:
+  - X = Y
+
+Y: 1
+Z:
+  - Bar
+  - Bar

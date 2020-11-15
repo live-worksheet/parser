@@ -226,6 +226,12 @@ return static function (ContainerConfigurator $containerConfigurator): void {
 
     $parameters = $containerConfigurator->parameters();
 
+    $parameters->set(Option::SKIP, [
+        MethodChainingIndentationFixer::class => [
+            'src/Parameter/Configuration/*Configuration.php',
+        ],
+    ]);
+
     $parameters->set(Option::LINE_ENDING, "\n");
     $parameters->set(Option::EXCLUDE_PATHS, ['*/Resources/*', '*/Fixtures/system/*']);
     $parameters->set(Option::CACHE_DIRECTORY, sys_get_temp_dir() . '/ecs_default_cache');

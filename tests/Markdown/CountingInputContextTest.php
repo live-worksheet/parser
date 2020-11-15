@@ -11,7 +11,7 @@ declare(strict_types=1);
 namespace LiveWorksheet\Parser\Tests\Markdown;
 
 use LiveWorksheet\Parser\Markdown\CountingInputContext;
-use LiveWorksheet\Parser\Parameter\Parameter;
+use LiveWorksheet\Parser\Parameter\Types\FunctionExpressionType;
 use PHPUnit\Framework\TestCase;
 
 class CountingInputContextTest extends TestCase
@@ -128,7 +128,7 @@ class CountingInputContextTest extends TestCase
         ]);
 
         $input->setParameters([
-            new Parameter('X', '1 + 1'),
+            new FunctionExpressionType('X = 1 + 1'),
         ]);
 
         return $input;

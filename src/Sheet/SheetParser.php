@@ -19,7 +19,7 @@ use Webmozart\PathUtil\Path;
 class SheetParser
 {
     public const MAIN_FILE = 'index.md';
-    public const PARAMETERS_FILE = 'parameters';
+    public const PARAMETERS_FILE = 'parameters.yaml';
 
     private Filesystem $filesystem;
 

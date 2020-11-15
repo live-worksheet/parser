@@ -1,0 +1,6 @@
+A:
+  - This
+  - That
+
+# Invalid YAML
+- B: Something else
