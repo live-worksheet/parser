@@ -52,8 +52,8 @@ class MaterialRepositoryTest extends FunctionalTestCase
             str_repeat('-', 80))
         );
 
-        self::assertGreaterThan(0, $numberOfFoundSheets);
-        self::assertEquals(Command::SUCCESS, $exitCode);
+        self::assertGreaterThan(0, $numberOfFoundSheets, 'found sheets');
+        self::assertEquals(Command::SUCCESS, $exitCode, 'exit code');
     }
 
     private function getNumberOfFoundSheets(string $output): int

@@ -11,7 +11,7 @@ declare(strict_types=1);
 namespace LiveWorksheet\Parser\Tests\Markdown;
 
 use LiveWorksheet\Parser\Markdown\Converter;
-use LiveWorksheet\Parser\Parameter\Parameter;
+use LiveWorksheet\Parser\Parameter\Types\StaticType;
 use LiveWorksheet\Parser\Tests\Fixtures\Markdown\TestInput;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Finder\Finder;
@@ -31,8 +31,8 @@ class ConverterTest extends TestCase
         $input->setContent($markdown);
 
         $input->setParameters([
-            new Parameter('Foo', ''),
-            new Parameter('Bar', ''),
+            new StaticType('Foo', ''),
+            new StaticType('Bar', ''),
         ]);
 
         $input->setResources([

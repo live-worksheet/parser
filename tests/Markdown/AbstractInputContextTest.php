@@ -11,7 +11,7 @@ declare(strict_types=1);
 namespace LiveWorksheet\Parser\Tests\Markdown;
 
 use LiveWorksheet\Parser\Markdown\AbstractInputContext;
-use LiveWorksheet\Parser\Parameter\Parameter;
+use LiveWorksheet\Parser\Parameter\Types\StaticType;
 use PHPUnit\Framework\TestCase;
 
 class AbstractInputContextTest extends TestCase
@@ -27,7 +27,7 @@ class AbstractInputContextTest extends TestCase
         ]);
 
         $input->setParameters([
-            new Parameter('X', '1 + 1'),
+            new StaticType('X', 'Y'),
         ]);
 
         self::assertEquals("test\ncontent\n", $input->getContent());

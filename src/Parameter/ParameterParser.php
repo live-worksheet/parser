@@ -11,92 +11,181 @@ declare(strict_types=1);
 namespace LiveWorksheet\Parser\Parameter;
 
 use LiveWorksheet\Parser\Exception\ParserException;
+use LiveWorksheet\Parser\Parameter\Configuration\FunctionsExpressionsConfiguration;
+use LiveWorksheet\Parser\Parameter\Configuration\StaticConfiguration;
+use LiveWorksheet\Parser\Parameter\Types\FunctionExpressionType;
+use LiveWorksheet\Parser\Parameter\Types\StaticType;
+use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
+use Symfony\Component\Config\Definition\Exception\InvalidDefinitionException;
+use Symfony\Component\Config\Definition\Processor;
+use Symfony\Component\Yaml\Exception\ParseException as YamlParserException;
+use Symfony\Component\Yaml\Yaml;
 
 class ParameterParser
 {
-    /**
-     * Parses a parameter definition and returns a Parameter or null if it
-     * could not be parsed. If $throw is set to true an exception is thrown
-     * instead.
-     */
-    public function parse(string $definition, bool $throwParserException = false): ?Parameter
+    private Processor $processor;
+
+    private FunctionsExpressionsConfiguration $functionsExpressionsConfiguration;
+    private StaticConfiguration $staticConfiguration;
+
+    public function __construct(Processor $processor)
     {
-        // Match "<var> = <expression> [| <mode> [<precision>]]"
-        preg_match(
-            '/^\s*([a-zA-Z_]+[\w_]*)\s*=\s*([^|]*)(?(?=\|)\|\s*([a-zA-Z]*)\s*(\d?)\s*)$/',
-            $definition,
-            $matches
-        );
+        $this->processor = $processor;
 
-        // todo: We might want to be less strict in the regular expression and
-        //       execute the strict checks afterwards to allow more verbose
-        //       exception messages.
+        $this->functionsExpressionsConfiguration = new FunctionsExpressionsConfiguration();
+        $this->staticConfiguration = new StaticConfiguration();
+    }
 
-        $name = $matches[1] ?? null;
-        $expression = $matches[2] ?? null;
-        $mode = strtolower($matches[3] ?? '') ?: null;
-        $precision = isset($matches[4]) ? (int) $matches[4] : null;
+    /**
+     * Parses YAML and returns the (unprocessed) structure.
+     */
+    public function getRawStructure(string $yamlContent): array
+    {
+        try {
+            return (array) Yaml::parse($yamlContent);
+        } catch (YamlParserException $e) {
+            throw new ParserException($e->getMessage(), 0, $e);
+        }
+    }
 
-        if (null === $name || null === $expression) {
-            if ($throwParserException) {
-                throw new ParserException("Could not parse definition: '$definition'.");
-            }
-
-            return null;
+    /**
+     * Parses a parameter structure and returns an array of parameters with keys
+     * being the parameter's names.
+     *
+     * @return array<string, ParameterInterface>
+     */
+    public function parseStructure(array $structure): array
+    {
+        if (empty($structure)) {
+            return [];
         }
 
-        if (null !== $mode) {
-            $modes = array_filter(
-                (new \ReflectionClass(Parameter::class))->getConstants(),
-                static fn (string $constant) => 0 === strpos($constant, 'MODE__'),
-                ARRAY_FILTER_USE_KEY
-            );
+        $entities = [];
 
-            if (!\in_array($mode, $modes, true)) {
-                if ($throwParserException) {
-                    throw new ParserException("Invalid constraint: Unknown mode '$mode'.");
+        // Process expressions under '_functions' key
+        if (null !== ($rawConfig = $structure['_functions'] ?? null)) {
+            foreach ($this->processFunctionsExpressionsConfig($rawConfig) as $config) {
+                try {
+                    $entities[] = new FunctionExpressionType(
+                        $config['expr'],
+                        $config['compare'],
+                        $config['precision'],
+                    );
+                } catch (\InvalidArgumentException $e) {
+                    throw new ParserException($e->getMessage(), 0, $e);
                 }
+            }
 
-                return null;
+            unset($structure['_functions']);
+        }
+
+        // Process static parameters
+        foreach ($this->processStaticConfig($structure) as $staticName => $staticValues) {
+            try {
+                $entities[] = new StaticType((string) $staticName, ...array_map('strval', $staticValues));
+            } catch (\InvalidArgumentException $e) {
+                throw new ParserException($e->getMessage(), 0, $e);
             }
         }
 
-        return new Parameter(
-            $name,
-            trim($expression),
-            $mode,
-            $precision
+        // Build map and ensure names are unique
+        $entitiesMap = [];
+
+        foreach ($entities as $entity) {
+            $staticName = $entity->getName();
+
+            if (isset($entitiesMap[$staticName])) {
+                throw new ParserException("Name '$staticName' cannot appear more than once.");
+            }
+
+            $entitiesMap[$staticName] = $entity;
+        }
+
+        // Make sure there are no unresolvable/circular dependencies
+        $this->ensureResolvableDependencies($entitiesMap);
+
+        return $entitiesMap;
+    }
+
+    /**
+     * Parses YAML and and returns an array of parameters with keys being the
+     * parameter's names.
+     *
+     * @return array<string, ParameterInterface>
+     */
+    public function parseYaml(string $yamlContent): array
+    {
+        return $this->parseStructure(
+            $this->getRawStructure($yamlContent)
         );
     }
 
     /**
-     * Parses a parameter file, filtering out comments and empty lines and
-     * parsing each remaining definition.
-     *
-     * Returns a mapping: parameter name => Parameter
-     *
-     * @return array<string, Parameter>
+     * @param mixed $rawConfig
      */
-    public function parseAll(string $content, bool $throw = false): array
+    private function processFunctionsExpressionsConfig($rawConfig): array
     {
-        // Split input into lines
-        $lines = preg_split('/((\r?\n)|(\r\n?))/', $content);
+        try {
+            return $this->processor->processConfiguration($this->functionsExpressionsConfiguration, [$rawConfig]);
+        } catch (InvalidDefinitionException | InvalidConfigurationException $e) {
+            throw new ParserException($e->getMessage(), 0, $e);
+        }
+    }
 
-        $parameterMap = [];
+    /**
+     * @param mixed $rawConfig
+     */
+    private function processStaticConfig($rawConfig): array
+    {
+        // Allow arbitrarily named keys
+        $normalizedRawConfig = [];
 
-        foreach ($lines as $line) {
-            // Ignore empty lines and comments
-            if (empty($line) || 0 === strpos(ltrim($line), '#')) {
-                continue;
+        foreach ((array) $rawConfig as $key => $value) {
+            if (!\is_string($key)) {
+                throw new ParserException(sprintf("Static value '%s' must contain a string key.", json_encode([$key => $value])));
             }
-
-            $parameter = $this->parse($line, $throw);
-
-            if (null !== $parameter) {
-                $parameterMap[$parameter->getName()] = $parameter;
-            }
+            $normalizedRawConfig[] = ['name' => $key, 'value' => $value];
         }
 
-        return $parameterMap;
+        try {
+            $config = $this->processor->processConfiguration($this->staticConfiguration, [$normalizedRawConfig]);
+        } catch (InvalidDefinitionException | InvalidConfigurationException $e) {
+            throw new ParserException($e->getMessage(), 0, $e);
+        }
+
+        return array_map(
+            static fn (array $parts): array => $parts['value'],
+            $config
+        );
+    }
+
+    /**
+     * @param array<string, ParameterInterface> $parameters
+     */
+    private function ensureResolvableDependencies(array $parameters): void
+    {
+        $resolvableParameters = [];
+
+        do {
+            $changes = false;
+
+            foreach ($parameters as $name => $parameter) {
+                // Keep searching if dependencies can not be resolved yet
+                if ($parameter instanceof DependentParameterInterface &&
+                    !empty(array_diff($parameter->dependsOn(), $resolvableParameters))) {
+                    continue;
+                }
+
+                // Mark as resolvable
+                $resolvableParameters[] = $name;
+                unset($parameters[$name]);
+
+                $changes = true;
+            }
+        } while ($changes);
+
+        if (!empty($parameters)) {
+            throw new ParserException(sprintf("There are unresolvable dependencies in function expression(s) '%s'.", implode("', '", array_keys($parameters))));
+        }
     }
 }

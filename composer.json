@@ -10,10 +10,15 @@
     ],
     "require": {
         "php": ">=7.4",
+        "ext-json": "*",
         "league/commonmark": "^1.5",
+        "savvot/random": "^0.3.0",
+        "symfony/config": "^5.1",
         "symfony/console": "^5.1",
+        "symfony/expression-language": "^5.1",
         "symfony/filesystem": "^5.1",
         "symfony/finder": "^5.1",
+        "symfony/yaml": "^5.1",
         "webmozart/path-util": "^2.3"
     },
     "require-dev": {
@@ -58,7 +63,6 @@
         "build": [
             "@cs",
             "@tests",
-            "@functional",
             "@psalm",
             "tools/box compile"
         ]

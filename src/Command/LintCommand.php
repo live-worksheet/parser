@@ -10,10 +10,13 @@ declare(strict_types=1);
 
 namespace LiveWorksheet\Parser\Command;
 
+use LiveWorksheet\Parser\Exception\EvaluationException;
 use LiveWorksheet\Parser\Exception\ParserException;
 use LiveWorksheet\Parser\Markdown\Converter;
 use LiveWorksheet\Parser\Markdown\CountingInputContext;
+use LiveWorksheet\Parser\Parameter\ParameterInterface;
 use LiveWorksheet\Parser\Parameter\ParameterParser;
+use LiveWorksheet\Parser\Parameter\ParameterTestContext;
 use LiveWorksheet\Parser\Sheet\Sheet;
 use LiveWorksheet\Parser\Sheet\SheetParser;
 use Symfony\Component\Console\Command\Command;
@@ -74,22 +77,12 @@ final class LintCommand extends Command
         try {
             $sheets = $this->sheetParser->parseAll($searchPath, null, true);
         } catch (ParserException $exception) {
-            $io->error(
-                sprintf(
-                    'Error parsing sheets: %s',
-                    $exception->getMessage()
-                )
-            );
+            $io->error(sprintf('Error parsing sheets: %s', $exception->getMessage()));
 
             return Command::FAILURE;
         }
 
-        $io->text(
-            sprintf(
-                "A total of %d sheets have been found.\n",
-                \count($sheets)
-            )
-        );
+        $io->text(sprintf("A total of %d sheets have been found.\n", \count($sheets)));
 
         // Validate sheets
         $io->text('Validating sheets…');
@@ -102,10 +95,13 @@ final class LintCommand extends Command
         foreach ($sheets as $sheet) {
             $progressBar->advance();
 
-            $err1 = $this->parseParameters($sheet, $parameters);
-            $err2 = $this->validateMarkdown($sheet, $parameters);
+            $parameters = [];
 
-            if (!empty($errors = [...$err1, ...$err2])) {
+            $err1 = $this->parseParameters($sheet, $parameters);
+            $err2 = $this->validateParameters($parameters);
+            $err3 = $this->validateMarkdown($sheet, $parameters);
+
+            if (!empty($errors = [...$err1, ...$err2, ...$err3])) {
                 $invalidSheets[$sheet->getFullName()] = $errors;
             }
         }
@@ -121,7 +117,7 @@ final class LintCommand extends Command
 
         foreach ($invalidSheets as $sheet => $errors) {
             $io->error(
-                sprintf("Sheet '%s' contains %d error(s):\n%s",
+                sprintf("Sheet '%s' contains at least %d error(s):\n%s",
                     $sheet,
                     \count($errors),
                     implode("\n", $errors)
@@ -132,16 +128,46 @@ final class LintCommand extends Command
         return Command::FAILURE;
     }
 
-    private function parseParameters(Sheet $sheet, array &$parameters = null): array
+    /**
+     * @param array<string, ParameterInterface> $parameters
+     */
+    private function parseParameters(Sheet $sheet, array &$parameters): array
     {
         try {
-            $parameters = $this->parameterParser->parseAll($sheet->getParameters(), true);
+            $structure = $this->parameterParser->getRawStructure($sheet->getParameterData());
         } catch (ParserException $exception) {
             return [
-                sprintf(
-                    " - Invalid parameter(s):\n    %s",
-                    $exception->getMessage()
-                ),
+                sprintf(" - Bad 'parameters.yaml' format:\n     %s", $exception->getMessage()),
+            ];
+        }
+
+        try {
+            $parameters = $this->parameterParser->parseStructure($structure);
+        } catch (ParserException $exception) {
+            $parameters = [];
+
+            return [
+                sprintf(" - Invalid parameter data:\n     %s", $exception->getMessage()),
+            ];
+        }
+
+        return [];
+    }
+
+    /**
+     * @param array<string, ParameterInterface> $parameters
+     */
+    private function validateParameters(array $parameters): array
+    {
+        try {
+            $context = new ParameterTestContext($parameters);
+
+            foreach ($parameters as $parameter) {
+                $parameter->getRawValue($context);
+            }
+        } catch (EvaluationException $exception) {
+            return [
+                sprintf(" - Test run for parameters failed:\n     %s", $exception->getMessage()),
             ];
         }
 

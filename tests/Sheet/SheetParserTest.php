@@ -31,15 +31,15 @@ class SheetParserTest extends TestCase
         $expectedFileMap = [
             'index.md' => Path::join(self::SHEETS_FIXTURE_DIR, 'CategoryA/Demo1/index.md'),
             'bar.txt' => Path::join(self::SHEETS_FIXTURE_DIR, 'CategoryA/Demo1/bar.txt'),
-            'parameters' => Path::join(self::SHEETS_FIXTURE_DIR, 'CategoryA/Demo1/parameters'),
             'Resources/foo.svg' => Path::join(self::SHEETS_FIXTURE_DIR, 'CategoryA/Demo1/Resources/foo.svg'),
+            'parameters.yaml' => Path::join(self::SHEETS_FIXTURE_DIR, 'CategoryA/Demo1/parameters.yaml'),
         ];
 
         self::assertNotNull($sheet);
         self::assertEquals($expectedName, $sheet->getFullName());
         self::assertEquals("Hello World\n", $sheet->getContent());
         self::assertEquals($expectedFileMap, $sheet->getResources());
-        self::assertEquals("A = foobar\n", $sheet->getParameters());
+        self::assertEquals("_functions:\n  - X = 4 + Y\n\nY: 100\n", $sheet->getParameterData());
     }
 
     public function provideDemo1Paths(): \Generator
@@ -116,7 +116,7 @@ class SheetParserTest extends TestCase
         );
 
         self::assertNotNull($sheet);
-        self::assertEquals('', $sheet->getParameters());
+        self::assertEquals('', $sheet->getParameterData());
     }
 
     /**
@@ -147,6 +147,7 @@ class SheetParserTest extends TestCase
             'CategoryA/Demo2',
             'CategoryB/SubCategory/Demo3',
             'Demo5',
+            'Demo6',
         ];
 
         yield 'all (identical base dir)' => [

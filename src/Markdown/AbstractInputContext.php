@@ -10,7 +10,7 @@ declare(strict_types=1);
 
 namespace LiveWorksheet\Parser\Markdown;
 
-use LiveWorksheet\Parser\Parameter\Parameter;
+use LiveWorksheet\Parser\Parameter\ParameterInterface;
 
 abstract class AbstractInputContext implements InputContextInterface
 {
@@ -19,7 +19,7 @@ abstract class AbstractInputContext implements InputContextInterface
     /** @var array<string, string> */
     protected array $resources = [];
 
-    /** @var array<string, Parameter> */
+    /** @var array<string, ParameterInterface> */
     protected array $parameters = [];
 
     public function getContent(): string
@@ -56,7 +56,7 @@ abstract class AbstractInputContext implements InputContextInterface
     }
 
     /**
-     * @param array<Parameter> $parameters
+     * @param array<ParameterInterface> $parameters
      */
     public function setParameters(array $parameters): void
     {

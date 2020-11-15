@@ -1,19 +1,28 @@
 
  Reading sheets…
- A total of 4 sheets have been found.
+ A total of 5 sheets have been found.
 
  Validating sheets…
- 0/4 [░░░░░░░░░░░░░░░░░░░░░░░░░░░░]   0%
- 4/4 [▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓] 100%
+ 0/5 [░░░░░░░░░░░░░░░░░░░░░░░░░░░░]   0%
+ 5/5 [▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓] 100%
 
- [ERROR] Sheet 'CategoryA/Demo2' contains 2 error(s):                           
+ [ERROR] Sheet 'CategoryA/Demo2' contains at least 4 error(s):                  
+          - Invalid parameter data:                                             
+              Static definition 'Z' contains duplicate values 'Bar'.            
           - Invalid md: The variable 'A' does not exist (seen 2x).              
+          - Invalid md: The variable 'B' does not exist (seen 1x).              
           - Invalid md: The variable placeholder 'A' does not exist (seen 1x).  
 
- [ERROR] Sheet 'CategoryB/SubCategory/Demo3' contains 1 error(s):               
+ [ERROR] Sheet 'CategoryB/SubCategory/Demo3' contains at least 1 error(s):      
           - Invalid md: The resource 'missing.svg' does not exist (seen 1x).    
 
- [ERROR] Sheet 'Demo5' contains 1 error(s):                                     
-          - Invalid parameter(s):                                               
-             Could not parse definition: 'B = invalid | a b c'.                 
+ [ERROR] Sheet 'Demo5' contains at least 1 error(s):                            
+          - Bad 'parameters.yaml' format:                                       
+              You cannot define a sequence item when in a mapping at line 6     
+         (near "- B: Something else").                                          
+
+ [ERROR] Sheet 'Demo6' contains at least 1 error(s):                            
+          - Test run for parameters failed:                                     
+              Syntax error in function 'A': The function "Unknown" does not     
+         exist around position 5 for expression `1 + Unknown()`..               
 

@@ -16,7 +16,7 @@ use LiveWorksheet\Parser\Markdown\AbstractInputContext;
 use LiveWorksheet\Parser\Markdown\InputContextInterface;
 use LiveWorksheet\Parser\Markdown\Variable\Variable;
 use LiveWorksheet\Parser\Markdown\Variable\VariableRenderer;
-use LiveWorksheet\Parser\Parameter\Parameter;
+use LiveWorksheet\Parser\Parameter\Types\FunctionExpressionType;
 use PHPUnit\Framework\TestCase;
 
 class VariableRendererTest extends TestCase
@@ -58,7 +58,7 @@ class VariableRendererTest extends TestCase
         };
 
         $input->setParameters([
-            new Parameter('Foo', '1 + 2'),
+            new FunctionExpressionType('Foo = 1 + 2'),
         ]);
 
         yield 'mapped variable' => [
