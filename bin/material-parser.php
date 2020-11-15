@@ -12,6 +12,7 @@ use LiveWorksheet\Parser\Command\LintCommand;
 use LiveWorksheet\Parser\Markdown\Converter;
 use LiveWorksheet\Parser\Parameter\ParameterParser;
 use LiveWorksheet\Parser\Sheet\SheetParser;
+use Symfony\Component\Config\Definition\Processor;
 use Symfony\Component\Console\Application;
 
 set_time_limit(0);
@@ -19,7 +20,7 @@ set_time_limit(0);
 require __DIR__.'/../vendor/autoload.php';
 
 $sheetParser = new SheetParser();
-$parameterParser = new ParameterParser();
+$parameterParser = new ParameterParser(new Processor());
 $markdownConverter = new Converter();
 
 $app = new Application();
