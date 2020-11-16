@@ -17,7 +17,6 @@ use LiveWorksheet\Parser\Parameter\ParameterParser;
 use LiveWorksheet\Parser\Sheet\SheetParser;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\Config\Definition\Processor;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Tester\CommandTester;
 use Webmozart\PathUtil\Path;
@@ -128,7 +127,7 @@ class LintCommandTest extends TestCase
     {
         return new LintCommand(
             $sheetParser ?? new SheetParser(),
-            new ParameterParser(new Processor()),
+            new ParameterParser(),
             new Converter()
         );
     }

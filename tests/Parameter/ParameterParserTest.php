@@ -15,7 +15,6 @@ use LiveWorksheet\Parser\Parameter\ParameterParser;
 use LiveWorksheet\Parser\Parameter\Types\FunctionExpressionType;
 use LiveWorksheet\Parser\Parameter\Types\StaticType;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\Config\Definition\Processor;
 
 class ParameterParserTest extends TestCase
 {
@@ -291,6 +290,6 @@ class ParameterParserTest extends TestCase
 
     private function getParser(): ParameterParser
     {
-        return new ParameterParser(new Processor());
+        return new ParameterParser();
     }
 }

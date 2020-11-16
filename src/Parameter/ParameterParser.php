@@ -24,14 +24,12 @@ use Symfony\Component\Yaml\Yaml;
 class ParameterParser
 {
     private Processor $processor;
-
     private FunctionsExpressionsConfiguration $functionsExpressionsConfiguration;
     private StaticConfiguration $staticConfiguration;
 
-    public function __construct(Processor $processor)
+    public function __construct()
     {
-        $this->processor = $processor;
-
+        $this->processor = new Processor();
         $this->functionsExpressionsConfiguration = new FunctionsExpressionsConfiguration();
         $this->staticConfiguration = new StaticConfiguration();
     }
